@@ -5,21 +5,25 @@ go 1.24.0
 //replace github.com/iluha481/protos => /home/kali/social_app/protos
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.23.2
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/golang-migrate/migrate/v4 v4.16.2
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0
 	github.com/iluha481/protos v0.0.0-20250402193458-2f08378a5127
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/mattn/go-sqlite3 v1.14.17
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.32.0
 	google.golang.org/grpc v1.71.1
 )
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
