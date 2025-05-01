@@ -126,6 +126,7 @@ func (a *Auth) Login(
 
 	app, err := a.appProvider.App(ctx, appID)
 	if err != nil {
+
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 

@@ -6,21 +6,21 @@ import (
 
 	grpcapp "sso/internal/app/grpc"
 	"sso/internal/services/auth"
-	"sso/internal/storage/sqlite"
+	"sso/internal/storage/postgresql"
 )
 
 type App struct {
 	GRPCServer *grpcapp.App
-	Storage    *sqlite.Storage
+	Storage    *postgresql.Storage
 }
 
 func New(
 	log *slog.Logger,
 	grpcPort int,
-	storagePath string,
+	connection string,
 	tokenTTL time.Duration,
 ) *App {
-	storage, err := sqlite.New(storagePath)
+	storage, err := postgresql.New(connection)
 	if err != nil {
 		panic(err)
 	}
