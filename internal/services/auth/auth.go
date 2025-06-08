@@ -31,11 +31,12 @@ type AppProvider interface {
 }
 
 type Auth struct {
-	log         *slog.Logger
-	usrSaver    UserSaver
-	usrProvider UserProvider
-	appProvider AppProvider
-	tokenTTL    time.Duration
+	log             *slog.Logger
+	usrSaver        UserSaver
+	usrProvider     UserProvider
+	appProvider     AppProvider
+	tokenTTL        time.Duration
+	refreshTokenTTL time.Duration
 }
 
 func New(
@@ -44,13 +45,15 @@ func New(
 	userProvider UserProvider,
 	appProvider AppProvider,
 	tokenTTL time.Duration,
+	refreshTokenTTL time.Duration,
 ) *Auth {
 	return &Auth{
-		usrSaver:    userSaver,
-		usrProvider: userProvider,
-		log:         log,
-		appProvider: appProvider,
-		tokenTTL:    tokenTTL,
+		usrSaver:        userSaver,
+		usrProvider:     userProvider,
+		log:             log,
+		appProvider:     appProvider,
+		tokenTTL:        tokenTTL,
+		refreshTokenTTL: refreshTokenTTL,
 	}
 }
 
@@ -94,7 +97,7 @@ func (a *Auth) Login(
 	email string,
 	password string,
 	appID int,
-) (string, error) {
+) (string, string, error) {
 	const op = "Auth.Login"
 
 	log := a.log.With(
@@ -110,24 +113,24 @@ func (a *Auth) Login(
 		if errors.Is(err, storage.ErrUserNotFound) {
 			a.log.Warn("user not found", sl.Err(err))
 
-			return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+			return "", "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 		}
 
 		a.log.Error("failed to get user", sl.Err(err))
 
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
 		a.log.Info("invalid credentials", sl.Err(err))
 
-		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+		return "", "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
 	app, err := a.appProvider.App(ctx, appID)
 	if err != nil {
 
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	log.Info("user logged in successfully")
@@ -136,8 +139,48 @@ func (a *Auth) Login(
 	if err != nil {
 		a.log.Error("failed to generate token", sl.Err(err))
 
-		return "", fmt.Errorf("%s: %w", op, err)
+		return "", "", fmt.Errorf("%s: %w", op, err)
+	}
+	refresh_token, err := jwt.NewRefreshToken(user, app, a.refreshTokenTTL)
+	if err != nil {
+		a.log.Error("failed to generate refresh token", sl.Err(err))
+		return "", "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	return token, nil
+	return token, refresh_token, nil
+}
+
+func (a *Auth) RefreshToken(
+	ctx context.Context,
+	refresh_token string,
+	appID int,
+) (string, string, error) {
+	const op = "Auth.RefreshToken"
+	app, err := a.appProvider.App(ctx, appID)
+
+	if err != nil {
+		return "", "", fmt.Errorf("%s: %w", op, err)
+
+	}
+
+	claims, err := jwt.ParseJwtToken(refresh_token, app.Refresh_secret)
+	if err != nil {
+		return "", "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	email := claims["email"].(string)
+	user, err := a.usrProvider.User(ctx, email)
+	if err != nil {
+		return "", "", fmt.Errorf("%s: %w", op, err)
+	}
+	access_token, err := jwt.NewToken(user, app, a.tokenTTL)
+
+	if err != nil {
+		return "", "", fmt.Errorf("%s: %w", op, err)
+	}
+	new_refresh_token, err := jwt.NewRefreshToken(user, app, a.refreshTokenTTL)
+	if err != nil {
+		return "", "", fmt.Errorf("%s: %w", op, err)
+	}
+	return access_token, new_refresh_token, nil
 }

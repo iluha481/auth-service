@@ -1,6 +1,6 @@
 env: "local"  
 storage_path: "./storage/sso.db"
-connection_string: "postgres://myuser:mypassword@localhost:5432/test_db_sso?sslmode=disable"  
+connection_string: "postgres://arch:arch@localhost:5432/dbsql?sslmode=disable" 
 grpc:  
   port: 44044  
   timeout: 10h

@@ -15,10 +15,11 @@ import (
 const (
 	appID          = 1
 	appSecret      = "secret"
+	refreshSecret  = "refresh_secret"
 	passDefaultLen = 10
 )
 
-func TestRegisterLogin_Login_HappyPath(t *testing.T) {
+func TestRegisterLogin_Login_refresh_HappyPath(t *testing.T) {
 	ctx, st := suite.New(t)
 
 	email := gofakeit.Email()
@@ -70,6 +71,63 @@ func TestRegisterLogin_Login_HappyPath(t *testing.T) {
 
 	// Проверяем, что TTL токена примерно соответствует нашим ожиданиям.
 	assert.InDelta(t, loginTime.Add(st.Cfg.TokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
+
+	// Проверяем рефреш токен
+	refresh_token := respLogin.GetRefreshToken()
+	refresh_token_parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(refreshSecret), nil
+	})
+	assert.NoError(t, err)
+	claims, ok = refresh_token_parsed.Claims.(jwt.MapClaims)
+	require.True(t, ok)
+
+	// Проверяем содержимое токена
+	assert.Equal(t, respReg.GetUserId(), int64(claims["uid"].(float64)))
+	assert.Equal(t, email, claims["email"].(string))
+	assert.Equal(t, appID, int(claims["app_id"].(float64)))
+
+	// Проверяем, что TTL токена примерно соответствует нашим ожиданиям.
+	assert.InDelta(t, loginTime.Add(st.Cfg.RefreshTokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
+	require.NotEmpty(t, refresh_token)
+
+	respRefresh, err := st.AuthClient.RefreshToken(ctx, &ssov1.RefreshRequest{
+		RefreshToken: refresh_token,
+	})
+	assert.NotEmpty(t, respRefresh)
+	assert.NoError(t, err)
+	refreshed_token := respRefresh.GetToken()
+	token_parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(appSecret), nil
+	})
+	assert.NoError(t, err)
+	claims, ok = refresh_token_parsed.Claims.(jwt.MapClaims)
+	require.True(t, ok)
+
+	// Проверяем содержимое токена
+	assert.Equal(t, respReg.GetUserId(), int64(claims["uid"].(float64)))
+	assert.Equal(t, email, claims["email"].(string))
+	assert.Equal(t, appID, int(claims["app_id"].(float64)))
+
+	// Проверяем, что TTL токена примерно соответствует нашим ожиданиям.
+	assert.InDelta(t, loginTime.Add(st.Cfg.TokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
+	require.NotEmpty(t, refresh_token)
+	refresh_token = respRefresh.GetRefreshToken()
+	refresh_token_parsed, err = jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		return []byte(refreshSecret), nil
+	})
+	assert.NoError(t, err)
+	claims, ok = refresh_token_parsed.Claims.(jwt.MapClaims)
+	require.True(t, ok)
+
+	// Проверяем содержимое токена
+	assert.Equal(t, respReg.GetUserId(), int64(claims["uid"].(float64)))
+	assert.Equal(t, email, claims["email"].(string))
+	assert.Equal(t, appID, int(claims["app_id"].(float64)))
+
+	// Проверяем, что TTL токена примерно соответствует нашим ожиданиям.
+	assert.InDelta(t, loginTime.Add(st.Cfg.RefreshTokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
+	require.NotEmpty(t, refresh_token)
+
 }
 
 func randomFakePassword() string {

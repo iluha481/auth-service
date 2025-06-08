@@ -19,13 +19,14 @@ func New(
 	grpcPort int,
 	connection string,
 	tokenTTL time.Duration,
+	refreshTokenTTL time.Duration,
 ) *App {
 	storage, err := postgresql.New(connection)
 	if err != nil {
 		panic(err)
 	}
 
-	authService := auth.New(log, storage, storage, storage, tokenTTL)
+	authService := auth.New(log, storage, storage, storage, tokenTTL, refreshTokenTTL)
 
 	grpcApp := grpcapp.New(log, authService, grpcPort)
 

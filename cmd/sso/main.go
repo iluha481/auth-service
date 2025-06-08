@@ -20,7 +20,7 @@ func main() {
 
 	log := setupLogger(cfg.Env)
 
-	application := app.New(log, cfg.GRPC.Port, cfg.Connection, cfg.TokenTTL)
+	application := app.New(log, cfg.GRPC.Port, cfg.Connection, cfg.TokenTTL, cfg.RefreshTokenTTL)
 
 	go func() {
 		application.GRPCServer.MustRun()
