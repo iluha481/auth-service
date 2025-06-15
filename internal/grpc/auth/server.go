@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sso/internal/services/auth"
 	"sso/internal/storage"
 
@@ -63,7 +64,7 @@ func (s *serverAPI) Login(
 		if errors.Is(err, auth.ErrInvalidCredentials) {
 			return nil, status.Error(codes.InvalidArgument, "invalid email or password")
 		}
-
+		fmt.Print(err)
 		return nil, status.Error(codes.Internal, "failed to login")
 	}
 

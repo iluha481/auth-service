@@ -15,7 +15,7 @@ type Config struct {
 	GRPC            GRPCConfig `yaml:"grpc"`
 	MigrationsPath  string
 	TokenTTL        time.Duration `yaml:"token_ttl" env-default:"1h"`
-	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-default:"14d"`
+	RefreshTokenTTL time.Duration `yaml:"refresh_ttl" env-default:"336h"`
 }
 
 type GRPCConfig struct {
